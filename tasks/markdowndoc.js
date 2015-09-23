@@ -6,41 +6,73 @@
  * Licensed under the MIT license.
  */
 
-'use strict';
+var markdowndoc = require('markdowndoc');
 
 module.exports = function(grunt) {
-  grunt.registerMultiTask('markdowndoc', 'A documentation tool for Markdown.', function() {
-    // Merge task-specific and/or target-specific options with these defaults.
+  function getModus(options) {
+    if (options.verbose) {
+      return 'verbose';
+    } else if (options.debug) {
+      return 'debug';
+    } else if (options.strict) {
+      return 'error';
+    }
+  }
+
+  function environment() {
+    // Defaults.
     var options = this.options({
-      punctuation: '.',
-      separator: ', '
+      noUpdateNotifier: true
     });
 
-    // Iterate over all specified file groups.
-    this.files.forEach(function(f) {
-      // Concat specified files.
-      var src = f.src.filter(function(filepath) {
-        // Warn on and remove invalid source files (if nonull was set).
-        if (!grunt.file.exists(filepath)) {
-          grunt.log.warn('Source file "' + filepath + '" not found.');
-          return false;
-        } else {
-          return true;
+    // Instantiate a new MarkdownDoc Environment.
+    var env = new markdowndoc.Environment(options.config, getModus(options));
+
+    env.on('error', grunt.log.error);
+
+    return env;
+  }
+
+  function ensure(env, options) {
+    for (var k of Object.keys(options)) {
+      if (typeof options[k] === 'object') {
+        env.set(k, options[k][0]);
+      } else {
+        env.set(k, options[k]);
+      }
+    }
+  }
+
+  grunt.registerMultiTask(
+    'markdowndoc',
+    'A documentation tool for Markdown.',
+    function() {
+      // var done   = this.async();
+      var target = this.target;
+      var env    = environment.call(this);
+
+      function compile(filePair) {
+        var src = filePair.orig.src;
+
+        if (!src.length) {
+          return grunt.fail.warn('No valid source provided');
         }
-      }).map(function(filepath) {
-        // Read file source.
-        return grunt.file.read(filepath);
-      }).join(grunt.util.normalizelf(options.separator));
 
-      // Handle options.
-      src += options.punctuation;
+        // Emit start event if anyone is listening.
+        if (grunt.event.listeners('markdowndoc.start').length > 0) {
+          grunt.event.emit('markdowndoc.start', target, src);
+        }
 
-      // Write the destination file.
-      grunt.file.write(f.dest, src);
+        ensure(env, filePair.orig);
 
-      // Print a success message.
-      grunt.log.writeln('File "' + f.dest + '" created.');
-    });
-  });
+        console.log(markdowndoc, markdowndoc(env));
+
+        // markdowndoc(env);
+      }
+
+      // Iterate over all specified file groups.
+      this.files.forEach(compile);
+    }
+  );
 
 };

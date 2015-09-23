@@ -1,73 +1,25 @@
-/*
- * grunt-markdowndoc
- * https://github.com/MarkdownDoc/grunt-markdowndoc
- *
- * Copyright (c) 2015 Daniel Bannert
- * Licensed under the MIT license.
- */
-
+// Gruntfile.js
 'use strict';
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
+  var path   = require('path');
 
-  // Project configuration.
-  grunt.initConfig({
-    jshint: {
-      all: [
-        'Gruntfile.js',
-        'tasks/*.js',
-        '<%= nodeunit.tests %>'
-      ],
-      options: {
-        jshintrc: '.jshintrc'
-      }
-    },
+  // Load all grunt tasks matching the `grunt-*` pattern.
+  require('load-grunt-tasks')(grunt);
 
-    // Before generating any new files, remove any previously-created files.
-    clean: {
-      tests: ['tmp']
-    },
+  // measures the time each task takes
+  require('time-grunt')(grunt);
 
-    // Configuration to be run (and then tested).
-    markdowndoc: {
-      default_options: {
-        options: {
-        },
-        files: {
-          'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123']
-        }
-      },
-      custom_options: {
-        options: {
-          separator: ': ',
-          punctuation: ' !!!'
-        },
-        files: {
-          'tmp/custom_options': ['test/fixtures/testing', 'test/fixtures/123']
-        }
-      }
-    },
+  // load grunt config
+  require('load-grunt-config')(grunt, {
 
-    // Unit tests.
-    nodeunit: {
-      tests: ['test/*_test.js']
-    }
+    // path to task.js files, defaults to grunt dir
+    configPath: [
+      path.join(process.cwd(), 'grunt'),
+      path.join(process.cwd(), 'tasks')
+    ],
 
+    // auto grunt.initConfig
+    init: true
   });
-
-  // Actually load this plugin's task(s).
-  grunt.loadTasks('tasks');
-
-  // These plugins provide necessary tasks.
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-nodeunit');
-
-  // Whenever the "test" task is run, first clean the "tmp" dir, then run this
-  // plugin's task(s), then test the result.
-  grunt.registerTask('test', ['clean', 'markdowndoc', 'nodeunit']);
-
-  // By default, lint and run all tests.
-  grunt.registerTask('default', ['jshint', 'test']);
-
 };
